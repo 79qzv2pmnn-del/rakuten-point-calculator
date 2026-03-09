@@ -1040,7 +1040,8 @@
       // ===================================================================
       // 全探索: 0〜min(totalTaxIncl-1, availablePoints) まで1円刻みでシミュレーション
       // ===================================================================
-      const maxPoints = totalTaxIncl - 1; // カード決済最低1円（ポイント上限なし）
+      // ギフト券(非課税)は全額ポイント払い不可（最低1円カード払い必要）、通常商品は全額ポイント払い可
+      const maxPoints = taxRate === 0 ? totalTaxIncl - 1 : totalTaxIncl;
       let bestPoints = 0;
       let bestEarnedPts = 0;
       let bestBreakdown = [];

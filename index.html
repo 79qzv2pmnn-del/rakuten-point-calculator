@@ -932,7 +932,7 @@
     // キャンペーン（SPU外）。これらは原則「税別・差し引き前」として扱う（公式の各キャンペーンルール参照）
     const CAMPAIGN_ITEMS = [
       // 買い回りはUI側でセレクターを使うため、ここには定義しない（動的生成）
-      { id: 'super_sale', name: '楽天スーパーSALEエントリー', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: true, limit: 7000 },
+      { id: 'super_sale', name: '楽天スーパーSALEエントリー', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: true, limit: 7000, hidden: true },
       { id: 'eagles_vissel', name: '勝ったら倍', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: true, limit: 1000 },
       { id: 'free_shipping', name: '送料無料ライン対応', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: true, limit: 3000 },
       { id: 'five_zero_day', name: '5と0のつく日', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: true, limit: 1000 },
@@ -957,7 +957,7 @@
 
       CAMPAIGN_ITEMS.forEach(item => {
         spuState[item.id] = item.default;
-        campaignGrid.appendChild(createSPUElement(item));
+        if (!item.hidden) campaignGrid.appendChild(createSPUElement(item));
       });
     }
 
@@ -1440,9 +1440,7 @@
         document.getElementById('rakuten-ref').style.display = 'block';
       }
 
-      if (!isInitialLoad) {
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      // scrollIntoView は無効化（チェック時の画面遷移防止）
     }
 
     // ===================================================================

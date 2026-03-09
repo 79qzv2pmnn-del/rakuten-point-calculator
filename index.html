@@ -241,6 +241,50 @@
       font-weight: 700;
     }
 
+    /* Feature Section Header */
+    .feature-section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 32px 0 12px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .feature-section-header .feature-icon {
+      font-size: 20px;
+    }
+
+    .feature-section-header .feature-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .feature-section-header .feature-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .feature-section-header.blue .feature-icon-bg {
+      background: linear-gradient(135deg, var(--accent-blue), #2b5c8f);
+    }
+
+    .feature-section-header .feature-icon-bg {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-red), #8b0020);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
     /* Campaign Section */
     .campaign-section {
       margin-top: 8px;
@@ -664,6 +708,15 @@
       <p>期間限定ポイントを「1円も損せず」使い切る最適額を算出</p>
     </div>
 
+    <!-- Section 1 Header -->
+    <div class="feature-section-header">
+      <div class="feature-icon-bg">🎯</div>
+      <div>
+        <div class="feature-label">機能 1</div>
+        <div class="feature-title">最適ポイント利用額を計算</div>
+      </div>
+    </div>
+
     <!-- 商品情報 -->
     <div class="card">
       <div class="card-title"><span class="icon">🛒</span> 商品情報</div>
@@ -736,8 +789,17 @@
       </div>
     </div>
 
+    <!-- Section 2 Header -->
+    <div class="feature-section-header blue" style="margin-top: 40px;">
+      <div class="feature-icon-bg" style="background: linear-gradient(135deg, var(--accent-blue), #2b5c8f);">📊</div>
+      <div>
+        <div class="feature-label">機能 2</div>
+        <div class="feature-title">キャンペーン上限チェック</div>
+      </div>
+    </div>
+
     <!-- キャンペーン上限・進捗チェック -->
-    <div class="card" style="margin-top: 24px;">
+    <div class="card">
       <div class="card-title"><span class="icon">📊</span> キャンペーン進捗・上限チェック</div>
 
       <div class="input-group" style="margin-bottom: 16px;">
@@ -850,7 +912,7 @@
       { id: 'card_normal', name: '楽天カード 通常分', multiplier: 1, unitPer: 100, taxType: 'taxIncl', deductType: 'beforeDeduct', default: true, isCampaign: false, limit: Infinity },
       { id: 'card_spu', name: '楽天カード 特典分', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'afterDeduct', default: true, isCampaign: false, limit: 1000 },
       { id: 'bank', name: '楽天銀行+楽天カード', multiplier: 0.3, unitPer: 100, taxType: 'taxExcl', deductType: 'afterDeduct', default: true, isCampaign: false, limit: 1000 },
-      { id: 'mobile', name: '楽天モバイル', multiplier: 4, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: true, isCampaign: false, limit: 2000 },
+      { id: 'mobile', name: '楽天モバイル', multiplier: 4, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 2000 },
       { id: 'turbo_hikari', name: 'Turbo/楽天ひかり', multiplier: 2, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
       { id: 'mobile_carrier', name: 'モバイルキャリア決済', multiplier: 2, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
       { id: 'books', name: '楽天ブックス', multiplier: 0.5, unitPer: 200, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },

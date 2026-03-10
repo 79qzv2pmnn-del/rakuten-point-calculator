@@ -532,6 +532,28 @@
       font-size: 15px;
     }
 
+    /* Comparison message */
+    .comparison-message {
+      padding: 12px 16px;
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      background: rgba(0, 200, 150, 0.04);
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .comparison-message .saving-highlight {
+      color: var(--accent-green);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .comparison-message .warning {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
     /* Footer */
     .footer {
       text-align: center;
@@ -641,33 +663,6 @@
       color: var(--accent-green);
     }
 
-    /* 楽天表記換算 */
-    .rakuten-ref {
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px solid rgba(42, 42, 74, 0.6);
-    }
-
-    .rakuten-ref-label {
-      font-size: 10px;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-
-    .rakuten-ref-main {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--accent-red-light);
-      line-height: 1.1;
-    }
-
-    .rakuten-ref-sub {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
     .copy-feedback {
       font-size: 11px;
       color: var(--accent-green);
@@ -706,7 +701,7 @@
     <div class="header">
       <div class="header-logo">🎯 RAKUTEN POINT OPTIMIZER</div>
       <h1>楽天ポイント最適化計算機</h1>
-      <p>期間限定ポイントを「1円も損せず」使い切る最適額を算出</p>
+      <p>楽天カードユーザーが、期間限定ポイントを「1円も損せず」使い切るための最適額を算出</p>
     </div>
 
     <!-- Section 1 Header -->
@@ -742,18 +737,6 @@
           </label>
         </div>
       </div>
-      <div class="input-group">
-        <label>送料（税込）</label>
-        <input type="number" id="shipping" placeholder="0" value="0" inputmode="numeric">
-      </div>
-    </div>
-
-    <!-- SPU設定 -->
-    <div class="card">
-      <div class="card-title"><span class="icon">⚡</span> あなたのSPU（タップでON/OFF）<span id="spu-total-label" style="margin-left: auto; font-size: 13px; color: var(--accent-gold); font-weight: 700;"></span></div>
-      <div class="spu-grid" id="spu-grid">
-        <!-- JS generates SPU items -->
-      </div>
     </div>
 
     <!-- Calculate -->
@@ -765,27 +748,22 @@
         <div class="label">💰 最適ポイント利用額</div>
         <div class="optimal-points" id="optimal-points">---</div>
         <div class="savings" id="savings-text"></div>
-        <div class="pattern-name" id="pattern-name"></div>
-        <div class="rakuten-ref" id="rakuten-ref">
-          <div class="rakuten-ref-label">参考: 楽天トップ表記換算</div>
-          <div class="rakuten-ref-main" id="rakuten-ref-main"></div>
-          <div class="rakuten-ref-sub" id="rakuten-ref-sub"></div>
-        </div>
       </div>
 
       <div class="comparison" id="comparison-table">
-        <div class="comparison-header">📊 パターン比較（主要3パターン）</div>
+        <div class="comparison-header" id="comparison-header">💡 ポイントを使っても獲得ptは変わりません</div>
         <div class="comparison-row header-row">
-          <div>パターン</div>
-          <div>ポイント利用</div>
+          <div></div>
+          <div>使用pt</div>
           <div>獲得pt</div>
           <div>カード決済額</div>
         </div>
         <div id="comparison-rows"></div>
+        <div class="comparison-message" id="comparison-message"></div>
       </div>
 
       <div class="breakdown" id="breakdown">
-        <h3>📋 最適パターンの獲得ポイント内訳</h3>
+        <h3>📋 獲得ポイント内訳</h3>
         <div id="breakdown-items"></div>
       </div>
     </div>
@@ -908,26 +886,12 @@
     //   taxExcl: 税別（消費税・送料除く）
     // unitPer: 何円で1ポイントか（例: 100 = 100円で1pt）
 
+    // 最適化の前提となるSPU（常にON・トグル不要）
+    // 楽天カード所持者は通常分（税込）と特典分（税別）の両方が適用される
+    // 他のSPU（楽天銀行等）はON/OFFしても最適P値が変わらないため除外
     const SPU_ITEMS = [
-      // --- afterDeduct（ポイント利用で減る）---
       { id: 'card_normal', name: '楽天カード 通常分', multiplier: 1, unitPer: 100, taxType: 'taxIncl', deductType: 'beforeDeduct', default: true, isCampaign: false, limit: Infinity },
-      { id: 'card_spu', name: '楽天カード 特典分', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'afterDeduct', default: true, isCampaign: false, limit: 1000 },
-      { id: 'bank', name: '楽天銀行+楽天カード', multiplier: 0.3, unitPer: 100, taxType: 'taxExcl', deductType: 'afterDeduct', default: true, isCampaign: false, limit: 1000 },
-      { id: 'mobile', name: '楽天モバイル', multiplier: 4, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 2000 },
-      { id: 'turbo_hikari', name: 'Turbo/楽天ひかり', multiplier: 2, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'mobile_carrier', name: 'モバイルキャリア決済', multiplier: 2, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'books', name: '楽天ブックス', multiplier: 0.5, unitPer: 200, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'kobo', name: '楽天Kobo', multiplier: 0.5, unitPer: 200, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'fashion', name: 'Rakuten Fashion', multiplier: 0.5, unitPer: 200, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'travel', name: '楽天トラベル', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'beauty', name: '楽天ビューティ', multiplier: 0.5, unitPer: 200, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'securities', name: '楽天証券 投資信託', multiplier: 0.5, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'securities_us', name: '楽天証券 米国株式', multiplier: 0.5, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'pasha', name: 'Rakuten Pasha', multiplier: 0.5, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'wallet', name: '楽天ウォレット', multiplier: 0.5, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'denki', name: '楽天でんき', multiplier: 0.5, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: Infinity },
-      { id: 'kdreams', name: '楽天Kドリームス', multiplier: 0.5, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
-      { id: 'rakuma', name: '楽天ラクマ', multiplier: 0.5, unitPer: 100, taxType: 'taxExcl', deductType: 'beforeDeduct', default: false, isCampaign: false, limit: 1000 },
+      { id: 'card_spu',    name: '楽天カード 特典分', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'afterDeduct', default: true, isCampaign: false, limit: 1000 },
     ];
 
     // キャンペーン（SPU外）。これらは原則「税別・差し引き前」として扱う（公式の各キャンペーンルール参照）
@@ -953,13 +917,31 @@
 
       SPU_ITEMS.forEach(item => {
         spuState[item.id] = item.default;
-        grid.appendChild(createSPUElement(item));
+        // SPUアイテムは固定表示とするため、クリックでのON/OFF機能を外した固定要素を生成
+        const el = document.createElement('div');
+        el.className = 'spu-item active fixed';
+        el.style.cursor = 'default';
+        el.style.borderColor = 'var(--accent-red)';
+        el.style.background = 'rgba(191, 0, 43, 0.08)';
+
+        const taxLabel = item.taxType === 'taxIncl' ? '税込' : '税別';
+
+        el.innerHTML = `
+          <div class="spu-left">
+            <span class="spu-name" style="margin-left: 8px;">${item.name} <span style="font-size:10px; color:var(--text-muted);">(${taxLabel})</span></span>
+          </div>
+          <span class="spu-multiplier">+${item.multiplier}倍</span>
+        `;
+        grid.appendChild(el);
       });
 
       CAMPAIGN_ITEMS.forEach(item => {
         spuState[item.id] = item.default;
         if (!item.hidden) campaignGrid.appendChild(createSPUElement(item));
       });
+
+      // SPU合計ラベルは固定なので非表示にするか書き換える
+      document.getElementById('spu-total-label').textContent = '';
     }
 
     function createSPUElement(item) {
@@ -1004,25 +986,22 @@
     // ===================================================================
     function calculate() {
       const priceInclInput = parseInt(document.getElementById('price-taxincl').value) || 0;
-      const shippingInput = parseInt(document.getElementById('shipping').value) || 0;
       const taxRate = parseInt(document.querySelector('input[name="tax-rate"]:checked').value) || 0;
 
       if (priceInclInput <= 0) {
-        // alertを廃止し、結果パネルを隠して終了（ユーザー体験の向上）
         document.getElementById('result-panel').classList.remove('visible');
         return;
       }
 
-      // 税込総額
-      const totalTaxIncl = priceInclInput + shippingInput;
-      if (totalTaxIncl <= 0) return;
+      const totalTaxIncl = priceInclInput;
 
-      // 税別価格の算出（商品価格のみ。送料は税別でも計算しない。SPU対象が「商品本体の税別」のため）
+      // 税別価格の算出（商品価格のみ。送料は税別でも計算しない）
+      // 楽天 Ichiba のポイント付与対象は「税込価格を1.1で割った金額（1円未満切り捨て）」が基本
       let taxExclPrice = priceInclInput;
       if (taxRate === 10) {
-        taxExclPrice = Math.round(priceInclInput * 10 / 11);
+        taxExclPrice = priceInclInput - Math.floor(priceInclInput * 10 / 110);
       } else if (taxRate === 8) {
-        taxExclPrice = Math.round(priceInclInput * 100 / 108);
+        taxExclPrice = priceInclInput - Math.floor(priceInclInput * 8 / 108);
       }
       // 0% (非課税) の場合は taxExclPrice = priceInclInput となる
 
@@ -1032,10 +1011,8 @@
       // 基本1倍（常にON）
       activeSPUs.push(BASE_POINT);
 
-      // 各SPU
-      SPU_ITEMS.forEach(item => {
-        if (spuState[item.id]) activeSPUs.push(item);
-      });
+      // SPU_ITEMSは常時ON（楽天カード通常分+特典分を前提とする）
+      SPU_ITEMS.forEach(item => activeSPUs.push(item));
 
       // ===================================================================
       // 全探索: 0〜min(totalTaxIncl-1, availablePoints) まで1円刻みでシミュレーション
@@ -1053,13 +1030,6 @@
       const taxInclFraction = totalTaxIncl % 100;
       if (taxInclFraction > 0 && taxInclFraction <= maxPoints) candidates.add(taxInclFraction);
 
-      // 税別端数 + 消費税分の候補
-      const taxExclRoundedDown = Math.floor(taxExclPrice / 100) * 100;
-      const fullDropCandidate = totalTaxIncl - taxExclRoundedDown; // 消費税+税別端数+送料
-      if (fullDropCandidate > 0 && fullDropCandidate <= maxPoints) candidates.add(fullDropCandidate);
-
-      // 送料分のみの候補
-      if (shippingInput > 0 && shippingInput <= maxPoints) candidates.add(shippingInput);
 
       // 100円刻みの境界全探索
       for (let p = 0; p <= maxPoints; p++) {
@@ -1070,17 +1040,15 @@
         }
       }
 
-      // 税別ベースの境界も重要
+      // 税別ベースの境界（card_spu用: taxExclPrice からポイントを直接差し引いた値の境界）
       for (let p = 0; p <= maxPoints; p++) {
         const afterDeductTaxExcl = Math.max(0, taxExclPrice - p);
         if (afterDeductTaxExcl % 100 === 0 || (afterDeductTaxExcl + 1) % 100 === 0) {
           candidates.add(p);
         }
-        // unitPer=200の場合の境界
         if (afterDeductTaxExcl % 200 === 0 || (afterDeductTaxExcl + 1) % 200 === 0) {
           candidates.add(p);
         }
-        // unitPer=400の場合の境界
         if (afterDeductTaxExcl % 400 === 0 || (afterDeductTaxExcl + 1) % 400 === 0) {
           candidates.add(p);
         }
@@ -1104,71 +1072,23 @@
         }
       }
 
-      // 比較パターンを生成
-      const patterns = [];
-      const makePat = (label, pUsed, earned) => ({
-        label, pointsUsed: pUsed, earned,
-        cashPayment: totalTaxIncl - pUsed, // カード決済額
-        isBest: false
-      });
-
-      // パターン1: 0ポイント（全額カード）
+      // 比較パターン（最適解 と 全額カード の2つのみ）
       const pat0 = simulatePoints(0, totalTaxIncl, taxExclPrice, activeSPUs);
-      patterns.push(makePat('全額カード', 0, pat0.totalPts));
+      const patterns = [
+        { label: '✅ 最適解', pointsUsed: bestPoints, earned: bestEarnedPts, cashPayment: totalTaxIncl - bestPoints, isBest: true },
+        { label: '全額カード', pointsUsed: 0, earned: pat0.totalPts, cashPayment: totalTaxIncl, isBest: false },
+      ];
 
-      // パターン2: 税込端数
-      if (taxInclFraction > 0 && taxInclFraction <= maxPoints) {
-        const patFrac = simulatePoints(taxInclFraction, totalTaxIncl, taxExclPrice, activeSPUs);
-        patterns.push(makePat(`税込端数 (${taxInclFraction}P)`, taxInclFraction, patFrac.totalPts));
-      }
+      // 1つ多く使った場合の獲得pt（警告用）
+      const overPt = bestPoints < maxPoints
+        ? simulatePoints(bestPoints + 1, totalTaxIncl, taxExclPrice, activeSPUs).totalPts
+        : null;
 
-      // パターン3: 消費税+税別端数（最強攻め）
-      if (fullDropCandidate > 0 && fullDropCandidate <= maxPoints && fullDropCandidate !== taxInclFraction) {
-        const patFull = simulatePoints(fullDropCandidate, totalTaxIncl, taxExclPrice, activeSPUs);
-        patterns.push(makePat(`税別端数+消費税 (${fullDropCandidate}P)`, fullDropCandidate, patFull.totalPts));
-      }
+      const savingsText = bestPoints === 0
+        ? '期間限定ポイントは他の買い物に回しましょう！'
+        : `獲得ポイント変わらず、${bestPoints}円節約！`;
 
-      // パターン4: 最適解（上記と重複しない場合のみ）
-      if (!patterns.some(p => p.pointsUsed === bestPoints)) {
-        patterns.push(makePat(`最適解 (${bestPoints}P)`, bestPoints, bestEarnedPts));
-      }
-
-      // 最適解にマーク
-      patterns.forEach(p => { p.isBest = p.pointsUsed === bestPoints; });
-
-      // パターン名の判定
-      let patternLabel = '';
-      if (bestPoints === 0) {
-        patternLabel = '全額カード決済が獲得ポイント最大';
-      } else if (bestPoints === taxInclFraction) {
-        patternLabel = `税込端数${taxInclFraction}円をポイント利用 → 獲得ポイント変わらず現金${taxInclFraction}円節約`;
-      } else if (bestPoints >= fullDropCandidate && fullDropCandidate > 0) {
-        patternLabel = `消費税+税別端数${fullDropCandidate}円をポイント利用`;
-      } else {
-        patternLabel = `最適解：${bestPoints}ポイント利用`;
-      }
-
-      // 全額カードとの比較メッセージ
-      const ptsDiff = bestEarnedPts - pat0.totalPts;
-      let savingsText;
-      if (bestPoints === 0) {
-        savingsText = '期間限定ポイントは他の買い物に回しましょう！';
-      } else if (ptsDiff === 0) {
-        savingsText = `獲得ポイント変わらず、現金を${bestPoints}円節約！`;
-      } else if (ptsDiff < 0) {
-        savingsText = `獲得ポイントは${Math.abs(ptsDiff)}pt減りますが、現金${bestPoints}円節約！`;
-      } else {
-        savingsText = `獲得ポイント${ptsDiff}pt増＋現金${bestPoints}円節約！`;
-      }
-
-      // 楽天表記換算の倍率計算
-      const shopCount = parseInt(document.getElementById('campaign-shop-count').value) || 1;
-      const marathonMult = shopCount > 1 ? Math.min(shopCount - 1, 9) : 0;
-      const spuMult = SPU_ITEMS.filter(s => spuState[s.id]).reduce((sum, s) => sum + s.multiplier, 0);
-      const totalMult = 1 + spuMult + marathonMult;
-      const multiplierInfo = { total: totalMult, spu: spuMult, marathon: marathonMult };
-
-      displayResults(bestPoints, bestEarnedPts, savingsText, patternLabel, patterns, bestBreakdown, multiplierInfo);
+      displayResults(bestPoints, bestEarnedPts, savingsText, patterns, bestBreakdown, overPt);
     }
 
     function simulatePoints(pointsUsed, totalTaxIncl, taxExclPrice, activeSPUs) {
@@ -1190,7 +1110,8 @@
           if (spu.taxType === 'taxIncl') {
             base = cardPayment; // カード決済額＝税込−ポイント
           } else {
-            base = afterDeductTaxExcl; // 税別−ポイント
+            // 税別価格からポイント利用額を直接差し引く
+            base = afterDeductTaxExcl;
           }
         }
 
@@ -1205,8 +1126,73 @@
       return { totalPts, breakdown };
     }
 
-    function displayResults(bestPoints, bestEarnedPts, savingsText, patternLabel, patterns, breakdown, multiplierInfo) {
-      displayResultsWrapped(bestPoints, bestEarnedPts, savingsText, patternLabel, patterns, breakdown, multiplierInfo);
+    function displayResults(bestPoints, bestEarnedPts, savingsText, patterns, breakdown, overPt) {
+      const panel = document.getElementById('result-panel');
+      panel.classList.add('visible');
+
+      // ヒーロー部分
+      document.getElementById('optimal-points').innerHTML = `${bestPoints}<span>ポイント</span>`;
+      document.getElementById('savings-text').textContent = savingsText;
+
+      // 比較ヘッダー
+      const header = document.getElementById('comparison-header');
+      header.textContent = bestPoints === 0
+        ? '全額カード決済が最適です'
+        : '💡 ポイントを使っても獲得ptは変わりません';
+
+      // 比較テーブル行
+      const rowsContainer = document.getElementById('comparison-rows');
+      rowsContainer.innerHTML = '';
+      patterns.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'comparison-row' + (p.isBest ? ' best' : '');
+        row.innerHTML = `
+          <div>${p.label}</div>
+          <div class="value">${p.pointsUsed.toLocaleString()}P</div>
+          <div class="value">${p.earned}pt</div>
+          <div class="value ${p.isBest ? 'positive' : ''}">${p.cashPayment.toLocaleString()}円</div>
+        `;
+        rowsContainer.appendChild(row);
+      });
+
+      // +1P行（獲得ptが減ることを示す）
+      if (bestPoints > 0 && overPt !== null && overPt < bestEarnedPts) {
+        const overRow = document.createElement('div');
+        overRow.className = 'comparison-row';
+        overRow.style.opacity = '0.7';
+        overRow.innerHTML = `
+          <div style="color: var(--accent-red-light);">⚠️ ${bestPoints + 1}P使用</div>
+          <div class="value">${(bestPoints + 1).toLocaleString()}P</div>
+          <div class="value negative">${overPt}pt ↓</div>
+          <div class="value">${(patterns[0].cashPayment - 1).toLocaleString()}円</div>
+        `;
+        rowsContainer.appendChild(overRow);
+      }
+
+      // メッセージ部分
+      const msgEl = document.getElementById('comparison-message');
+      if (bestPoints > 0) {
+        msgEl.innerHTML = `<span class="saving-highlight">${bestPoints}ポイントを使うと ${bestPoints}円お得！</span>（獲得pt は同じ ${bestEarnedPts}pt）`;
+        msgEl.style.display = 'block';
+      } else {
+        msgEl.style.display = 'none';
+      }
+
+      // ポイント内訳
+      const breakdownContainer = document.getElementById('breakdown-items');
+      breakdownContainer.innerHTML = '';
+      let totalBdPts = 0;
+      breakdown.forEach(b => {
+        totalBdPts += b.pts;
+        const el = document.createElement('div');
+        el.className = 'breakdown-item';
+        el.innerHTML = `<span class="name">${b.name}</span><span class="pts">${b.pts}pt</span>`;
+        breakdownContainer.appendChild(el);
+      });
+      const totalEl = document.createElement('div');
+      totalEl.className = 'breakdown-item total';
+      totalEl.innerHTML = `<span class="name">合計獲得ポイント</span><span class="pts">${totalBdPts}pt</span>`;
+      breakdownContainer.appendChild(totalEl);
     }
 
     // ===================================================================
@@ -1231,8 +1217,8 @@
       }
 
       // 税抜金額に換算して合算 (キャンペーンのポイント計算は税抜ベース)
-      const taxExcl10 = Math.round(total10 * 10 / 11);
-      const taxExcl8 = Math.round(total8 * 100 / 108);
+      const taxExcl10 = total10 - Math.floor(total10 * 10 / 110);
+      const taxExcl8 = total8 - Math.floor(total8 * 8 / 108);
       const taxExcl0 = total0;
       const totalPurchasedExcl = taxExcl10 + taxExcl8 + taxExcl0;
 
@@ -1328,7 +1314,6 @@
     function saveState() {
       const state = {
         price: document.getElementById('price-taxincl').value,
-        shipping: document.getElementById('shipping').value,
         taxRate: document.querySelector('input[name="tax-rate"]:checked')?.value ?? '10',
         campaign10: document.getElementById('campaign-total-10').value,
         campaign8: document.getElementById('campaign-total-8').value,
@@ -1351,7 +1336,6 @@
         const state = JSON.parse(raw);
 
         if (state.price) document.getElementById('price-taxincl').value = state.price;
-        if (state.shipping != null) document.getElementById('shipping').value = state.shipping;
         if (state.taxRate) {
           const radio = document.querySelector(`input[name="tax-rate"][value="${state.taxRate}"]`);
           if (radio) radio.checked = true;
@@ -1382,75 +1366,12 @@
     // ===================================================================
     let isInitialLoad = false;
 
-    function displayResultsWrapped(bestPoints, bestEarnedPts, savingsText, patternLabel, patterns, breakdown, multiplierInfo) {
-      const panel = document.getElementById('result-panel');
-      panel.classList.add('visible');
-
-      document.getElementById('optimal-points').innerHTML = `${bestPoints}<span>ポイント</span>`;
-      document.getElementById('savings-text').textContent = savingsText;
-      document.getElementById('pattern-name').textContent = patternLabel;
-
-      const rowsContainer = document.getElementById('comparison-rows');
-      rowsContainer.innerHTML = '';
-
-      const sorted = [...patterns].sort((a, b) => b.earned - a.earned || a.cashPayment - b.cashPayment);
-
-      sorted.forEach(p => {
-        const row = document.createElement('div');
-        row.className = 'comparison-row' + (p.isBest ? ' best' : '');
-        row.innerHTML = `
-      <div>${p.label}${p.isBest ? ' ✨' : ''}</div>
-      <div class="value">${p.pointsUsed}P</div>
-      <div class="value">${p.earned}pt</div>
-      <div class="value ${p.isBest ? 'positive' : ''}">${p.cashPayment.toLocaleString()}円</div>
-    `;
-        rowsContainer.appendChild(row);
-      });
-
-      const breakdownContainer = document.getElementById('breakdown-items');
-      breakdownContainer.innerHTML = '';
-
-      let totalBdPts = 0;
-      breakdown.forEach(b => {
-        totalBdPts += b.pts;
-        const el = document.createElement('div');
-        el.className = 'breakdown-item';
-        const tagClass = b.deductType === 'beforeDeduct' ? 'safe' : 'risky';
-        const tagLabel = b.deductType === 'beforeDeduct' ? '不変' : '変動';
-        el.innerHTML = `
-      <span class="name">${b.name} <span class="spu-tag ${tagClass}">${tagLabel}</span></span>
-      <span class="pts">${b.pts}pt</span>
-    `;
-        breakdownContainer.appendChild(el);
-      });
-
-      const totalEl = document.createElement('div');
-      totalEl.className = 'breakdown-item total';
-      totalEl.innerHTML = `
-    <span class="name">合計獲得ポイント</span>
-    <span class="pts">${totalBdPts}pt</span>
-  `;
-      breakdownContainer.appendChild(totalEl);
-
-      // 楽天表記換算
-      if (multiplierInfo) {
-        const fmt = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
-        const subParts = [`SPUポイント ${fmt(multiplierInfo.spu)}倍`, `基本 1倍`];
-        if (multiplierInfo.marathon > 0) subParts.unshift(`買い回り ＋${multiplierInfo.marathon}倍`);
-        document.getElementById('rakuten-ref-main').textContent = `${fmt(multiplierInfo.total)}倍！`;
-        document.getElementById('rakuten-ref-sub').textContent = subParts.join(' ／ ');
-        document.getElementById('rakuten-ref').style.display = 'block';
-      }
-
-      // scrollIntoView は無効化（チェック時の画面遷移防止）
-    }
 
     // ===================================================================
     // テンプレート エクスポート / インポート
     // ===================================================================
     function exportTemplate() {
       const price = parseInt(document.getElementById('price-taxincl').value) || 0;
-      const shipping = parseInt(document.getElementById('shipping').value) || 0;
       const taxRate = parseInt(document.querySelector('input[name="tax-rate"]:checked')?.value || '10');
       const campaign10 = parseInt(document.getElementById('campaign-total-10').value) || 0;
       const campaign8 = parseInt(document.getElementById('campaign-total-8').value) || 0;
@@ -1462,13 +1383,13 @@
       const now = new Date();
       const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-      const totalTaxIncl = price + shipping;
+      const totalTaxIncl = price;
       let taxExclPrice = price;
-      if (taxRate === 10) taxExclPrice = Math.round(price * 10 / 11);
-      else if (taxRate === 8) taxExclPrice = Math.round(price * 100 / 108);
+      if (taxRate === 10) taxExclPrice = price - Math.floor(price * 10 / 110);
+      else if (taxRate === 8) taxExclPrice = price - Math.floor(price * 8 / 108);
       const taxRateLabel = taxRate === 10 ? '通常商品 (10%)' : taxRate === 8 ? '食品など (8%)' : '非課税 (0%)';
 
-      const activeSPUs = [BASE_POINT, ...SPU_ITEMS.filter(s => spuState[s.id])];
+      const activeSPUs = [BASE_POINT, ...SPU_ITEMS];
 
       const lines = [
         '=== 楽天ポイント 買い物相談メモ ===',
@@ -1479,45 +1400,28 @@
       // ── 商品情報 ──
       lines.push('【購入検討中の商品】');
       if (price > 0) {
-        const priceDetail = shipping > 0
-          ? `商品 ${price.toLocaleString()}円 ＋ 送料 ${shipping.toLocaleString()}円`
-          : `商品 ${price.toLocaleString()}円`;
-        lines.push(`・税込合計: ${totalTaxIncl.toLocaleString()}円（${priceDetail}）`);
+        lines.push(`・税込価格: ${price.toLocaleString()}円`);
         lines.push(`・商品種別: ${taxRateLabel}`);
-        lines.push(`・税抜価格（商品のみ）: ${taxExclPrice.toLocaleString()}円`);
+        lines.push(`・税抜価格: ${taxExclPrice.toLocaleString()}円`);
       } else {
         lines.push('・商品価格: 未入力');
       }
 
       // ── SPU ──
       lines.push('');
-      lines.push('【適用中のSPU一覧】');
+      lines.push('【適用中のSPU一覧（計算対象）】');
       lines.push('・楽天会員 基本1倍（常時）');
-      const activeSPUsExBase = SPU_ITEMS.filter(s => spuState[s.id]);
-      if (activeSPUsExBase.length === 0) {
-        lines.push('・（追加SPUなし）');
-      } else {
-        activeSPUsExBase.forEach(s => {
-          const limitStr = s.limit === Infinity ? '上限なし' : `月間上限 ${s.limit.toLocaleString()}pt`;
-          lines.push(`・${s.name}: +${s.multiplier}倍（${limitStr}）`);
-        });
-      }
+      lines.push('・楽天カード 通常分: +1倍');
+      lines.push('・楽天カード 特典分: +1倍');
+      lines.push('※モバイルなどポイントで払っても還元が減らないSPUは最適化計算に影響しないため除外しています。');
 
       // ── 最適ポイント計算 ──
       if (price > 0 && totalTaxIncl > 0) {
         const maxPoints = totalTaxIncl - 1;
         const candidates = new Set([0]);
-        const taxInclFraction = totalTaxIncl % 100;
-        if (taxInclFraction > 0 && taxInclFraction <= maxPoints) candidates.add(taxInclFraction);
-        const fullDropCandidate = totalTaxIncl - Math.floor(taxExclPrice / 100) * 100;
-        if (fullDropCandidate > 0 && fullDropCandidate <= maxPoints) candidates.add(fullDropCandidate);
-        if (shipping > 0 && shipping <= maxPoints) candidates.add(shipping);
         for (let p = 0; p <= maxPoints; p++) {
-          const cp = totalTaxIncl - p;
-          if (cp % 100 === 0 || (cp + 1) % 100 === 0) candidates.add(p);
           const at = Math.max(0, taxExclPrice - p);
           if (at % 100 === 0 || (at + 1) % 100 === 0) candidates.add(p);
-          if (at % 200 === 0 || (at + 1) % 200 === 0) candidates.add(p);
         }
 
         let bestPoints = 0, bestEarnedPts = 0, bestBreakdown = [];
@@ -1556,8 +1460,8 @@
       lines.push('');
       lines.push('【キャンペーン上限チェック】');
 
-      const taxExcl10 = Math.round(campaign10 * 10 / 11);
-      const taxExcl8 = Math.round(campaign8 * 100 / 108);
+      const taxExcl10 = campaign10 - Math.floor(campaign10 * 10 / 110);
+      const taxExcl8 = campaign8 - Math.floor(campaign8 * 8 / 108);
       const totalPurchasedExcl = taxExcl10 + taxExcl8 + campaign0;
 
       if (totalPurchasedExcl > 0 || shopCount > 1) {
@@ -1581,6 +1485,7 @@
             : '  → 上限到達済み（以降加算なし）');
         }
 
+        // SPU（カード関連）の上限
         const ALL_TARGET = [...CAMPAIGN_ITEMS, ...SPU_ITEMS.filter(s => s.limit !== Infinity)];
         ALL_TARGET.forEach(item => {
           if (!spuState[item.id]) return;
@@ -1594,7 +1499,7 @@
             : '  → 上限到達済み（以降加算なし）');
         });
       } else {
-        lines.push('・累積購入金額が未入力のため省略');
+        lines.push('・累積購入金額が未入力のため省略。');
       }
 
       lines.push('');
@@ -1602,7 +1507,7 @@
 
       // インポート用データ（この行を削除すると読み込めなくなります）
       const importData = {
-        price, shipping, taxRate,
+        price, taxRate,
         campaign10, campaign8, campaign0,
         shopCount, marathonLimit,
         spuState: { ...spuState },
@@ -1653,7 +1558,6 @@
       }
 
       if (data.price != null) document.getElementById('price-taxincl').value = data.price || '';
-      if (data.shipping != null) document.getElementById('shipping').value = data.shipping ?? 0;
       if (data.taxRate != null) {
         const radio = document.querySelector(`input[name="tax-rate"][value="${data.taxRate}"]`);
         if (radio) radio.checked = true;

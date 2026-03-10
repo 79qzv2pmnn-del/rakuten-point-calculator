@@ -890,7 +890,7 @@
     // 楽天カード所持者は通常分（税込）と特典分（税別）の両方が適用される
     // 他のSPU（楽天銀行等）はON/OFFしても最適P値が変わらないため除外
     const SPU_ITEMS = [
-      { id: 'card_normal', name: '楽天カード 通常分', multiplier: 1, unitPer: 100, taxType: 'taxIncl', deductType: 'beforeDeduct', default: true, isCampaign: false, limit: Infinity },
+      { id: 'card_normal', name: '楽天カード 通常分', multiplier: 1, unitPer: 100, taxType: 'taxIncl', deductType: 'afterDeduct', default: true, isCampaign: false, limit: Infinity },
       { id: 'card_spu',    name: '楽天カード 特典分', multiplier: 1, unitPer: 100, taxType: 'taxExcl', deductType: 'afterDeduct', default: true, isCampaign: false, limit: 1000 },
     ];
 
